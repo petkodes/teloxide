@@ -2,71 +2,44 @@
 name = "teloxide"
 version = "0.12.2"
 description = "An elegant Telegram bots framework for Rust"
-
 rust-version.workspace = true
-
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
-
 documentation = "https://docs.rs/teloxide/"
 readme = "../../README.md"
-
 keywords = ["teloxide", "telegram", "telegram-bot", "telegram-bot-api", "bot"]
 categories = ["web-programming", "api-bindings", "asynchronous"]
 
-
 [features]
-default = ["native-tls", "ctrlc_handler", "teloxide-core/default"]
-
+default = ["rustls", "ctrlc_handler", "teloxide-core/default"]
 webhooks = ["rand"]
 webhooks-axum = ["webhooks", "axum", "tower", "tower-http"]
-
-sqlite-storage-nativetls = [
-    "sqlx",
-    "sqlx/runtime-tokio-native-tls",
-    "native-tls",
-]
 sqlite-storage-rustls = ["sqlx", "sqlx/runtime-tokio-rustls", "rustls"]
-postgres-storage-nativetls = ["sqlx", "sqlx/runtime-tokio-native-tls", "native-tls"]
 postgres-storage-rustls = ["sqlx", "sqlx/runtime-tokio-rustls", "rustls"]
 redis-storage = ["redis"]
-
 cbor-serializer = ["serde_cbor"]
 bincode-serializer = ["bincode"]
-
 macros = ["teloxide-macros"]
-
 ctrlc_handler = ["tokio/signal"]
-
-native-tls = ["teloxide-core/native-tls"]
 rustls = ["teloxide-core/rustls"]
 throttle = ["teloxide-core/throttle"]
-cache-me = [
-    "teloxide-core/cache_me",
-] # FIXME: why teloxide and core use - _ differently?
+cache-me = ["teloxide-core/cache_me"]
 trace-adaptor = ["teloxide-core/trace_adaptor"]
 erased = ["teloxide-core/erased"]
-
-# currently used for `README.md` tests, building docs for `docsrs` to add `This is supported on feature="..." only.`,
-# and for teloxide-core.
 nightly = ["teloxide-core/nightly"]
-
 full = [
     "webhooks",
     "webhooks-axum",
-    "sqlite-storage-nativetls",
-    # "sqlite-storage-rustls" is explicitly ommited here,
-    # since it conflicts with "sqlite-storage-nativetls"
+    "sqlite-storage-rustls",
     "redis-storage",
-    "postgres-storage-nativetls",
+    "postgres-storage-rustls",
     "cbor-serializer",
     "bincode-serializer",
     "macros",
     "ctrlc_handler",
     "teloxide-core/full",
-    "native-tls",
     "rustls",
     "throttle",
     "cache-me",
@@ -74,40 +47,26 @@ full = [
     "erased",
 ]
 
-
 [dependencies]
-teloxide-core = { version = "0.9.1", path = "../teloxide-core", default-features = false }
+teloxide-core = { version = "0.9.1", path = "../teloxide-core", default-features = false, features = ["rustls"] }
 teloxide-macros = { version = "0.7.1", path = "../teloxide-macros", optional = true }
-
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-
 dptree = "0.3.0"
-
-# Uncomment this if you want to test teloxide with a specific dptree commit
-# dptree = { git = "https://github.com/teloxide/dptree", rev = "df578e4" }
-
 tokio = { version = "1.8", features = ["fs"] }
 tokio-util = "0.7"
 tokio-stream = "0.1.8"
-
 url = "2.2.2"
 log = "0.4"
 bytes = "1.0"
 mime = "0.3"
-
 derive_more = "0.99"
 thiserror = "1.0"
 futures = "0.3.15"
 pin-project = "1.0"
 aquamarine = "0.5.0"
 either = "1.9.0"
-
-sqlx = { version = "0.7.3", optional = true, default-features = false, features = [
-    "macros",
-    "sqlite",
-    "postgres"
-] }
+sqlx = { version = "0.7.3", optional = true, default-features = false, features = ["macros", "sqlite", "postgres", "runtime-tokio-rustls"] }
 redis = { version = "0.24", features = ["tokio-comp"], optional = true }
 serde_cbor = { version = "0.11", optional = true }
 bincode = { version = "1.3", optional = true }
@@ -115,9 +74,6 @@ axum = { version = "0.6.0", optional = true }
 tower = { version = "0.4.12", optional = true }
 tower-http = { version = "0.3.4", features = ["trace"], optional = true }
 rand = { version = "0.8.5", optional = true }
-
-# HACK: ahash 0.8.7 bumped MSRV to 1.72, to keep MVSR 1.68 we need to depend on an older version.
-#       this can be removed once our MSRV crosses 1.72.
 ahash = "=0.8.7"
 
 [dev-dependencies]
@@ -126,13 +82,11 @@ pretty_env_logger = "0.5.0"
 serde = "1"
 serde_json = "1"
 tokio = { version = "1.8", features = ["fs", "rt-multi-thread", "macros"] }
-reqwest = "0.11.11"
+reqwest = { version = "0.11.11", default-features = false, features = ["json", "rustls-tls"] }
 chrono = "0.4"
 tokio-stream = "0.1"
 
-
 [package.metadata.docs.rs]
-# NB: can't use `all-features = true`, because `sqlite-storage-nativetls` conflicts with `sqlite-storage-rustls`
 features = ["full", "nightly"]
 rustdoc-args = ["--cfg", "docsrs"]
 rustc-args = ["--cfg", "dep_docsrs"]
@@ -154,24 +108,16 @@ required-features = ["redis-storage", "cbor-serializer", "bincode-serializer"]
 [[test]]
 name = "sqlite"
 path = "tests/sqlite.rs"
-required-features = [
-    "sqlite-storage-nativetls",
-    "cbor-serializer",
-    "bincode-serializer",
-]
+required-features = ["sqlite-storage-rustls", "cbor-serializer", "bincode-serializer"]
 
 [[test]]
 name = "postgres"
 path = "tests/postgres.rs"
-required-features = ["postgres-storage-nativetls", "cbor-serializer", "bincode-serializer"]
+required-features = ["postgres-storage-rustls", "cbor-serializer", "bincode-serializer"]
 
 [[example]]
 name = "admin"
 required-features = ["macros", "ctrlc_handler"]
-
-# This is required due to some stuff with dev-dependencies,
-# backwards compatability and cargo:
-# https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#scrape-examples
 doc-scrape-examples = true
 
 [[example]]
@@ -184,12 +130,7 @@ required-features = ["macros", "ctrlc_handler"]
 
 [[example]]
 name = "db_remember"
-required-features = [
-    "sqlite-storage-nativetls",
-    "redis-storage",
-    "bincode-serializer",
-    "macros",
-]
+required-features = ["sqlite-storage-rustls", "redis-storage", "bincode-serializer", "macros"]
 
 [[example]]
 name = "dialogue"
